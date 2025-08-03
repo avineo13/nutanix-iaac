@@ -1,0 +1,62 @@
+---
+# Example execution:
+#   -> ansible-playbook volume_groups.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token  -e vg_name=gfgfg22July
+- name: Create/Update Volume Groups
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/volumegroups/var_{{ vg_name }}.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    #### Helper Task Operations
+    - name: Fetch cluster uuids
+      ansible.builtin.include_tasks: task_helpers/get_cluster_uuids.yaml
+      vars:
+        ntnx_cluster_list:
+          - "{{ cluster_name }}"
+
+    - name: Get list of VMs and their IDs
+      ansible.builtin.include_tasks: task_helpers/get_vm_uuids.yaml
+      vars:
+        ntnx_vms_list: "{{ attach_vms + detach_vms }}"
+
+    - name: Fetch storage container IDs
+      ansible.builtin.include_tasks: task_helpers/get_storage_containers_uuids.yaml
+      vars:
+        ntnx_storage_containers_list:
+          - "{{ storage_container }}"
+
+    #### Volume Group Operations
+    - name: Check if VG exists and if not, create it, if exists, update it
+      ansible.builtin.import_role:
+        name: ntnx_volume_groups
+        tasks_from: create_update_vg.yaml
+
+    - name: Get VG and their IDs
+      ansible.builtin.include_tasks: task_helpers/get_vg_uuids.yaml
+      vars:
+        ntnx_vgs_list:
+          - "{{ vg_name }}"
+
+    #### Volume Group Disk Operations
+    - name: Check if VG Disks exist or not, if not, create it, if exists, update it
+      ansible.builtin.import_role:
+        name: ntnx_volume_groups
+        tasks_from: create_update_vg_disks.yaml
+
+    #### VM Group Attachment Operations
+    - name: Attach VM to the VG
+      ansible.builtin.import_role:
+        name: ntnx_volume_groups
+        tasks_from: attach_vms.yaml
+
+    - name: Detach VM to the VG
+      ansible.builtin.import_role:
+        name: ntnx_volume_groups
+        tasks_from: detach_vms.yaml
+...

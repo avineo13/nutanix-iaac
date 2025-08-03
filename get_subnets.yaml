@@ -1,0 +1,59 @@
+---
+# Example execution:
+#   -> ansible-playbook get_subnets.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token -e cluster_name=KSALAB-NX
+- name: Get Subnets
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/var_subnet.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+  - name: Fetch cluster uuids
+    ansible.builtin.include_tasks: task_helpers/get_cluster_uuids.yaml
+    vars:
+      ntnx_cluster_list:
+        - "{{ cluster_name }}"
+
+  - name: Fetch subnets cluster-wise
+    ansible.builtin.include_tasks: task_helpers/get_subnet.yaml
+    loop: "{{ subnets.keys() }}"
+    loop_control:
+      loop_var: cluster_key
+
+  - name: Compute difference
+    ansible.builtin.set_fact:
+      computed_diff: "{{ subnets | to_json | community.general.json_diff(cluster_subnets) }}"
+
+  - name: Pretty Print - Missing values (If none)
+    ansible.builtin.debug:
+      msg: "All values are as per code."
+    when: not computed_diff
+
+  - name: Pretty Print - Missing values (If any)
+    ansible.builtin.debug:
+      msg:
+        - >-
+          {%- if diff_iter.op == "replace" -%}
+          Value for {{ subnet_name }} in {{ cluster_name }} identified to be different.
+          {%- else -%}
+          Value for {{ subnet_name }} in {{ cluster_name }} is missing.
+          {% endif %}
+        - >-
+          Git code: {{ subnets[cluster_name][subnet_name] }}.
+        - >-
+          {%- if diff_iter.op == "replace" -%}
+          Cluster config: {{ cluster_subnets[cluster_name][subnet_name] }}.
+          {%- endif -%}
+    vars:
+      cluster_name: "{{ diff_iter['path'].split('/')[1] }}"
+      subnet_name: "{{ diff_iter['path'].split('/')[2] }}"
+    loop: "{{ computed_diff }}"
+    loop_control:
+      loop_var: diff_iter
+      label: "{{ cluster_name }} -> {{ subnet_name }}"
+...

@@ -1,0 +1,5 @@
+---
+# tasks file for ntnx_subnets
+- name: Include create_update_subnet tasks
+  ansible.builtin.include_tasks: create_update_subnet.yaml
+...

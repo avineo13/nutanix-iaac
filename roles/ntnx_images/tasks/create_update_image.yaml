@@ -1,0 +1,37 @@
+---
+- name: Check if Image exists
+  nutanix.ncp.ntnx_images_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ image_name }}'"
+  register: verify_image_presence
+
+- name: Fail if more than one already exists
+  ansible.builtin.fail:
+    msg: "More than one Image with the same name exists. Please ensure that the image has been deleted."
+  when: verify_image_presence.response | length > 1
+
+- name: Update Image with all config when it already exists
+  nutanix.ncp.ntnx_images_v2:
+    state: "present"
+    name: "{{ image_name }}"
+    description: "{{ description | default('') }}"
+    ext_id: "{{ verify_image_presence.response[0]['ext_id'] }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    storage_container_reference: "{{ storage_containers_name_to_uuid[storage_container] }}"
+    image_type: "{{ image_type | default('DISK_IMAGE') }}"
+    source_uri: "{{ source_uri | default('') }}"
+    architecture: "{{ architecture | default('X86_64') }}"
+  when: verify_image_presence.response | length == 1
+
+- name: Create Image with all config if it does not exists
+  nutanix.ncp.ntnx_images_v2:
+    state: "present"
+    name: "{{ image_name }}"
+    description: "{{ description | default('') }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    storage_container_reference: "{{ storage_containers_name_to_uuid[storage_container] }}"
+    image_type: "{{ image_type | default('DISK_IMAGE') }}"
+    source_uri: "{{ source_uri | default('') }}"
+    architecture: "{{ architecture | default('X86_64') }}"
+  when: verify_image_presence.response | length == 0 

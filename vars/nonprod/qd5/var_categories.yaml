@@ -1,0 +1,30 @@
+---
+ntnx_categories:
+  SongPlacementSkill:
+    - name: FightSceneDanceBreak
+      state: present
+    - name: SwitzerlandSuddenly
+      state: present
+    - name: SadBreakupItemSong
+      state: present
+    - name: OveractedDrama
+      state: absent
+  BollywoodPlotLogic:
+    - name: KyaHiLogic
+      state: absent
+    - name: LostTwinBrother
+      state: absent
+    - name: MemoryLossExpert
+      state: absent
+    - name: JustWhy
+      state: absent
+  ActorMode:
+    - name: OveractingKiDukaan
+      state: present
+    - name: ExpressionlessHero
+      state: present
+    - name: CryingSince90s
+      state: present
+    - name: okish
+      state: absent
+...

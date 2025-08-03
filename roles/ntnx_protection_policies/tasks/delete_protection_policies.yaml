@@ -1,0 +1,7 @@
+---
+- name: Delete Protection Policies
+  ansible.builtin.include_tasks: delete_single_policy.yaml
+  loop: "{{ protection_policies.keys() | list }}"
+  loop_control:
+    loop_var: policy_name
+    label: "{{ policy_name }}" 

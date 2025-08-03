@@ -1,0 +1,14 @@
+---
+# Default values for ntnx_images role
+
+# Image type (DISK_IMAGE, ISO_IMAGE, etc.)
+image_type: "DISK_IMAGE"
+
+# Architecture (X86_64, ARM64, etc.)
+architecture: "X86_64"
+
+# Description (empty by default)
+description: ""
+
+# Source URI (empty by default)
+source_uri: ""

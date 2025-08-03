@@ -1,0 +1,16 @@
+---
+- name: Getting VMs
+  nutanix.ncp.ntnx_vms_info_v2:
+  register: vms
+- name: Set fact about VMs
+  ansible.builtin.set_fact:
+    attached_vg_extids: >-
+      {{
+        vms.response
+        | json_query(json_query)
+      }}
+  vars:
+    json_query:  "[].{name: name, volumeGroupExtId: disks[?backing_info.volume_group_ext_id].backing_info.volume_group_ext_id}"
+- debug:
+    var: attached_vg_extids
+...

@@ -1,0 +1,21 @@
+---
+- name: Fetch all VGs info with filter
+  nutanix.ncp.ntnx_volume_groups_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_vgs_list }}"
+  register: ntnx_vgs_info_list
+
+- name: Map VGs uuid to name
+  ansible.builtin.set_fact:
+    vgs_name_to_uuid: "{{ vgs_name_to_uuid | default({}) | combine({vg_name: vg_uuid}) }}"
+  loop: "{{ ntnx_vgs_info_list.results }}"
+  vars:
+    vg_uuid: "{{ vg_iter['response'][0]['ext_id'] }}"
+    vg_name: "{{ vg_iter['item'] }}"
+  loop_control:
+    loop_var: vg_iter
+    label: "{{ vg_iter['item'] }}"
+  when: vg_iter.response | length != 0
+...

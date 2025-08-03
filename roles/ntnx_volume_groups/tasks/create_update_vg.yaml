@@ -1,0 +1,35 @@
+---
+- name: Check if VG exists
+  nutanix.ncp.ntnx_volume_groups_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ vg_name }}'"
+  register: verify_vg_presence
+
+- name: Fail if more than one already exists
+  ansible.builtin.fail:
+    msg: "More than one Volume Group with the same name exists. Please ensure that the volume group has been deleted."
+  when: verify_vg_presence.response | length > 1
+
+- name: Update Volume group with all config when it already exists
+  nutanix.ncp.ntnx_volume_groups_v2:
+    state: "present"
+    sharing_status: "{{sharing_status}}"
+    ext_id: "{{ verify_vg_presence.response[0]['ext_id'] }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    storage_features:
+      flash_mode:
+        is_enabled: "{{ enable_flash_mode | default(false) }}"
+  when: verify_vg_presence.response | length == 1
+
+- name: Create Volume group with all config if it does not exists
+  nutanix.ncp.ntnx_volume_groups_v2:
+    state: "present"
+    name: "{{ vg_name }}"
+    sharing_status: "{{ sharing_status }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    storage_features:
+      flash_mode:
+        is_enabled: "{{ enable_flash_mode | default(false) }}"
+  when: verify_vg_presence.response | length == 0
+...

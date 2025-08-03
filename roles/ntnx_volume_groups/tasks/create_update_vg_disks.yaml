@@ -1,0 +1,24 @@
+---
+#### Volume Group Disk Operations
+- name: Attach disks to VG
+  nutanix.ncp.ntnx_volume_groups_disks_v2:
+    state: "present"
+    volume_group_ext_id: "{{ vgs_name_to_uuid[vg_name] }}"
+    index: "{{ disk_index }}"
+    description: "{{ vg_disks[disk_index]['description'] }} | default(default_desc)"
+    disk_size_bytes: "{{ vg_disks[disk_index]['disk_size_in_gb'] * 1024 * 1024 * 1024  }}"
+    disk_data_source_reference:
+      entity_type: STORAGE_CONTAINER
+      ext_id: "{{ container_name_to_uuid[storage_container] }}"
+  loop: "{{ vg_disks }}"
+  loop_control:
+    index_var: disk_index
+  register: attach_disk_output
+  vars:
+    failed_msg_check: "Bus slot {{ disk_index }} is already occupied"
+    default_desc: "{{ 'Disk ' + disk_index }}"
+  failed_when:
+    - attach_disk_output.msg is defined
+    - attach_disk_output.msg == "Task Failed"
+    - attach_disk_output.response.legacy_error_message != failed_msg_check
+...

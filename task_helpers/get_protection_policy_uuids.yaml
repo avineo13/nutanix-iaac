@@ -1,0 +1,20 @@
+---
+- name: Fetch all Protection Policies info with filter
+  nutanix.ncp.ntnx_protection_policies_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_protection_policies_list }}"
+  register: ntnx_protection_policies_info_list
+
+- name: Map Protection Policies uuid to name
+  ansible.builtin.set_fact:
+    protection_policies_name_to_uuid: "{{ protection_policies_name_to_uuid | default({}) | combine({policy_name: policy_uuid}) }}"
+  loop: "{{ ntnx_protection_policies_info_list.results }}"
+  vars:
+    policy_uuid: "{{ policy_iter['response'][0]['ext_id'] }}"
+    policy_name: "{{ policy_iter['item'] }}"
+  loop_control:
+    loop_var: policy_iter
+    label: "{{ policy_iter['item'] }}"
+  when: policy_iter.response | length != 0 

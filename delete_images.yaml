@@ -1,0 +1,53 @@
+---
+# Example execution:
+#   -> ansible-playbook delete_images.yaml -e environment_key=nonprod -e site_key=qd5  -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token  -e image_name=my_image
+- name: Delete Images
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/images/var_{{ image_name }}.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    #### Helper Task Operations
+    - name: Fetch cluster uuids
+      ansible.builtin.include_tasks: task_helpers/get_cluster_uuids.yaml
+      vars:
+        ntnx_cluster_list:
+          - "{{ cluster_name }}"
+
+    - name: Fetch storage container IDs
+      ansible.builtin.include_tasks: task_helpers/get_storage_containers_uuids.yaml
+      vars:
+        ntnx_storage_containers_list:
+          - "{{ storage_container }}"
+
+    - name: Get Image and their IDs
+      ansible.builtin.include_tasks: task_helpers/get_image_uuids.yaml
+      vars:
+        ntnx_images_list:
+          - "{{ image_name }}"
+
+    #### Prechecks
+    - name: Check if Image exists
+      nutanix.ncp.ntnx_images_info_v2:
+        validate_certs: false
+        select: "extId"
+        filter: "name eq '{{ image_name }}'"
+      register: verify_image_presence
+
+    - name: Fail if more than one already exists
+      ansible.builtin.fail:
+        msg: "More than one Image, or no Image with the same name exists. Please ensure that the image exists, and there's only one."
+      when: verify_image_presence.response | length != 1
+
+    #### Image Operations
+    - name: Delete Image
+      nutanix.ncp.ntnx_images_v2:
+        state: "absent"
+        ext_id: "{{ verify_image_presence.response[0]['ext_id'] }}"
+      when: verify_image_presence.response | length == 1 

@@ -1,0 +1,48 @@
+---
+# Example execution:
+#   -> ansible-playbook delete_subnets.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token -e cluster_name=KSALAB-NX  -e subnet_name=VLAN-105
+- name: Delete Subnets
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/var_subnet.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    #### Helper Task Operations
+    - name: Fetch cluster uuids
+      ansible.builtin.include_tasks: task_helpers/get_cluster_uuids.yaml
+      vars:
+        ntnx_cluster_list:
+          - "{{ cluster_name }}"
+
+    - name: Get subnet and their IDs
+      ansible.builtin.include_tasks: task_helpers/get_subnet_uuids.yaml
+      vars:
+        ntnx_subnets_list:
+          - "{{ subnet_name }}"
+
+    #### Prechecks
+    - name: Check if subnet exists
+      nutanix.ncp.ntnx_subnets_info_v2:
+        validate_certs: false
+        select: "extId"
+        filter: "name eq '{{ subnet_name }}'"
+      register: verify_subnet_presence
+
+    - name: Fail if more than one already exists
+      ansible.builtin.fail:
+        msg: "More than one Subnet, or no Subnet with the same name exists. Please ensure that the subnet exists, and that there's only one."
+      when: verify_subnet_presence.response | length != 1
+
+    #### Subnet Operations
+    - name: Delete subnet
+      nutanix.ncp.ntnx_subnets_v2:
+        state: "absent"
+        ext_id: "{{ verify_subnet_presence.response[0]['ext_id'] }}"
+      when: verify_subnet_presence.response | length == 1
+...

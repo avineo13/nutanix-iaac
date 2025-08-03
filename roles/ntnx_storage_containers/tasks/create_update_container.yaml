@@ -1,0 +1,36 @@
+---
+- name: Check if storage container exists
+  nutanix.ncp.ntnx_storage_containers_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ container_name }}' and clusterExtId eq '{{ cluster_name_to_uuid[cluster_name] }}'"
+  register: verify_container_presence
+
+- name: Fail if more than one already exists
+  ansible.builtin.fail:
+    msg: "More than one storage container with the same name exists. Please ensure that the storage container has been deleted."
+  when: verify_container_presence.response | length > 1
+
+- name: Update storage container with all config when it already exists
+  nutanix.ncp.ntnx_storage_containers_v2:
+    state: "present"
+    ext_id: "{{ verify_container_presence.response[0]['container_ext_id'] }}"
+    cluster_ext_id: "{{ cluster_name_to_uuid[cluster_name] }}"
+    name: "{{ container_name }}"
+    replication_factor: "{{ replication_factor | default(omit) }}"
+    erasure_code: "{{ erasure_code_profile | default(omit) }}"
+    is_compression_enabled: "{{ compression_enabled | default(omit) }}"
+    on_disk_dedup: "{{ deduplication_enabled | default(omit) }}"
+  when: verify_container_presence.response | length == 1
+
+- name: Create storage container with all config if it does not exists
+  nutanix.ncp.ntnx_storage_containers_v2:
+    state: "present"
+    name: "{{ container_name }}"
+    cluster_ext_id: "{{ cluster_name_to_uuid[cluster_name] }}"
+    replication_factor: "{{ replication_factor | default(omit) }}"
+    erasure_code: "{{ erasure_code_profile | default(omit) }}"
+    is_compression_enabled: "{{ compression_enabled | default(omit) }}"
+    on_disk_dedup: "{{ deduplication_enabled | default(omit) }}"
+  when: verify_container_presence.response | length == 0
+...

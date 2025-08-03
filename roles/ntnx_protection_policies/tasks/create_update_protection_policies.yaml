@@ -1,0 +1,10 @@
+---
+- name: Create/Update Protection Policies
+  ansible.builtin.include_tasks: create_update_single_policy.yaml
+  loop: "{{ protection_policies.items() }}"
+  loop_control:
+    loop_var: policy_item
+    label: "{{ policy_item[0] }}"
+  vars:
+    policy_name: "{{ policy_item[0] }}"
+    policy_config: "{{ policy_item[1] }}" 

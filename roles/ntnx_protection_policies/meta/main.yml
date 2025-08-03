@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: Nutanix IaC Team
+  description: Ansible role for managing Nutanix protection policies
+  company: Nutanix
+  license: BSD
+  min_ansible_version: 2.9
+  platforms:
+    - name: Nutanix
+      versions:
+        - all
+  galaxy_tags:
+    - nutanix
+    - protection-policies
+    - infrastructure
+    - cloud
+    - backup
+dependencies: [] 

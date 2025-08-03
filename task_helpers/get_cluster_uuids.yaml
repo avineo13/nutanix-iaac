@@ -1,0 +1,21 @@
+---
+- name: Fetch all clusters info with filter
+  nutanix.ncp.ntnx_clusters_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_cluster_list }}"
+  register: ntnx_clusters_info_list
+
+- name: Map clusters uuid to name
+  ansible.builtin.set_fact:
+    cluster_name_to_uuid: "{{ cluster_name_to_uuid | default({}) | combine({cluster_name: cluster_uuid}) }}"
+  loop: "{{ ntnx_clusters_info_list.results }}"
+  vars:
+    cluster_uuid: "{{ cluster_iter['response'][0]['ext_id'] }}"
+    cluster_name: "{{ cluster_iter['item'] }}"
+  loop_control:
+    loop_var: cluster_iter
+    label: "{{ cluster_iter['item'] }}"
+  when: cluster_iter.response | length != 0
+...

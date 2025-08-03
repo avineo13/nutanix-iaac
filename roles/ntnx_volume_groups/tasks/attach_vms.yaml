@@ -1,0 +1,15 @@
+---
+- name: Attach VMs from VG
+  nutanix.ncp.ntnx_volume_groups_vms_v2:
+    state: "present"
+    volume_group_ext_id: "{{ vgs_name_to_uuid[vg_name] }}"
+    ext_id: "{{ vms_name_to_uuid[item] }}"
+  loop: "{{ attach_vms }}"
+  register: attach_vm_output
+  vars:
+    failed_msg_check: "VG already attached to VM"
+  failed_when:
+    - attach_vm_output.msg is defined
+    - attach_vm_output.msg == "Task Failed"
+    - attach_vm_output.response.legacy_error_message != failed_msg_check
+...

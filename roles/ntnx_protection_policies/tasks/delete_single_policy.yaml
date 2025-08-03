@@ -1,0 +1,13 @@
+---
+- name: Check if Protection Policy exists
+  nutanix.ncp.ntnx_protection_policies_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ policy_name }}'"
+  register: verify_policy_presence
+
+- name: Delete Protection Policy if it exists
+  nutanix.ncp.ntnx_protection_policies_v2:
+    state: "absent"
+    ext_id: "{{ verify_policy_presence.response[0]['ext_id'] }}"
+  when: verify_policy_presence.response | length == 1 

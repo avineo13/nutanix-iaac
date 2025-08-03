@@ -1,0 +1,28 @@
+---
+# Example execution:
+#   -> 'ansible-playbook storage_containers.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token -e container_name=NewContainer'
+- name: Create/Update Storage Containers
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/storagecontainers/var_{{ container_name }}.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    #### Helper Task Operations
+    - name: Fetch cluster uuids
+      ansible.builtin.include_tasks: task_helpers/get_cluster_uuids.yaml
+      vars:
+        ntnx_cluster_list:
+          - "{{ cluster_name }}"
+
+    #### Storage Container Operations
+    - name: Check if storage container exists and if not, create it, if exists, update it
+      ansible.builtin.import_role:
+        name: ntnx_storage_containers
+        tasks_from: create_update_container.yaml
+...

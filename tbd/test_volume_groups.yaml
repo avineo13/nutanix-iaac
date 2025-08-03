@@ -1,0 +1,25 @@
+---
+# Example execution:
+#   -> ansible-playbook volume_groups.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token  -e vg_name=gfgfg21July
+- name: Update Volume Groups
+  hosts: localhost
+  vars_files:
+    - "{{ environment_key }}/{{ site_key }}/volumegroups/var_{{ vg_name }}.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    - name: Update Volume group with all config when it already exists
+      nutanix.ncp.ntnx_volume_groups_v2:
+        state: "present"
+        sharing_status: "NOT_SHARED"
+        ext_id: "f10f7a1f-73de-41dd-57c2-405c9f4c2777"
+        cluster_reference: "00062b80-fff7-7d6b-1228-ac1f6b379171"
+        storage_features:
+          flash_mode:
+            is_enabled: false
+...

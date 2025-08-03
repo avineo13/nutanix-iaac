@@ -1,0 +1,61 @@
+---
+# Example execution:
+#   -> ansible-playbook categories.yaml -e environment_key=nonprod -e site_key=qd5 -e nutanix_host=10.10.3.10 --vault-pass-file .vault-token
+- name: Update Categories which are not required
+  hosts: localhost
+  vars_files:
+    - "vars/{{ environment_key }}/{{ site_key }}/var_categories.yaml"
+    - var_vault.yaml
+  module_defaults:
+    group/nutanix.ncp.ntnx:
+      nutanix_host: "{{ nutanix_host }}"
+      nutanix_username: "{{ nutanix_username }}"
+      nutanix_password: "{{ nutanix_password }}"
+      validate_certs: false
+  tasks:
+    - name: Fetch category key & value meant to be deleted
+      ansible.builtin.set_fact:
+        category_list: "{{ ntnx_categories | dict2items | subelements('value') | selectattr('1.state', 'equalto', 'absent') }}"
+
+    - name: Fetch category ids for the categories which are meant to be deleted
+      nutanix.ncp.ntnx_categories_info_v2:
+        filter: "key eq '{{ category_key }}' and value eq '{{ category_value }}'"
+      vars:
+        category_key: "{{ category_iter[0].key }}"
+        category_value: "{{ category_iter[1].name }}"
+      loop: "{{ category_list }}"
+      loop_control:
+        loop_var: category_iter
+        label: "{{ category_key }} -> {{ category_value }}"
+      register: delete_category_list
+
+    - name: Delete category key & value
+      nutanix.ncp.ntnx_categories_v2:
+        ext_id: "{{ delete_category_iter['response'][0]['ext_id'] }}"
+        state: absent
+      loop: "{{ delete_category_list.results }}"
+      loop_control:
+        label: "{{ key }} -> {{ value }}"
+        loop_var: delete_category_iter
+      vars:
+        key: "{{ delete_category_iter['category_iter'][0]['key'] }}"
+        value: "{{ delete_category_iter['category_iter'][1]['name'] }}"
+      register: category_creation_output
+      when:
+        - delete_category_iter.response != None
+
+    - name: Create category key & value
+      nutanix.ncp.ntnx_categories_v2:
+        key: "{{ item.0.key }}"
+        value: "{{ item.1.name }}"
+      loop: "{{ ntnx_categories | dict2items | subelements('value') }}"
+      loop_control:
+        label: "{{ item.0.key }} -> {{ item.1.name }}"
+      register: category_creation_output
+      when:
+        - "item.1.state == 'present'"
+      failed_when:
+        - category_creation_output.error is defined
+        - category_creation_output.message is defined
+        - '"Operation failed as a category with the provided key and value already exists" not in category_creation_output.message'
+...

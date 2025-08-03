@@ -1,0 +1,30 @@
+---
+- name: Get list of all subnets
+  nutanix.ncp.ntnx_subnets_info_v2:
+    validate_certs: false
+    filter: "name eq '{{ item }}' and clusterReference eq '{{ cluster_name_to_uuid[cluster_key] }}'"
+  register: subnet_results
+  loop: "{{ subnets[cluster_key].keys() }}"
+
+- name: Construct var based on Get operation
+  ansible.builtin.set_fact:
+    cluster_subnets: >-
+      {{ cluster_subnets |
+          default({}) |
+          combine({cluster_key: {
+            vlan_name: {
+              "subnet_type": subnet_type,
+              "network_id": network_id
+            }
+          }}, recursive=True)
+      }}
+  vars:
+    vlan_name: "{{ subnet_iter['response'][0]['name'] | default('vlan_name') }}"
+    subnet_type: "{{ subnet_iter['response'][0]['subnet_type'] | default('subnet_type') }}"
+    network_id: "{{ subnet_iter['response'][0]['network_id'] | default('network_id') }}"
+  loop: "{{ subnet_results.results }}"
+  loop_control:
+    loop_var: subnet_iter
+    label: "{{ subnet_iter['response'][0]['name'] | default('default') }}"
+  when: subnet_iter.response | length != 0
+...

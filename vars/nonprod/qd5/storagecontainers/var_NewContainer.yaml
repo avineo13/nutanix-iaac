@@ -1,0 +1,7 @@
+---
+name: NewContainer
+cluster_name: KSALAB-NX
+replication_factor: 2
+compression_enabled: true
+deduplication_enabled: POST_PROCESS #Can we one of: NONE, OFF, POST_PROCESS
+...

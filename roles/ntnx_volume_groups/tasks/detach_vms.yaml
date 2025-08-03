@@ -1,0 +1,15 @@
+---
+- name: Detach VMs from VG
+  nutanix.ncp.ntnx_volume_groups_vms_v2:
+    state: "absent"
+    volume_group_ext_id: "{{ vgs_name_to_uuid[vg_name] }}"
+    ext_id: "{{ vms_name_to_uuid[item] }}"
+  loop: "{{ detach_vms }}"
+  register: detach_vm_output
+  vars:
+    failed_msg_check: "{{ 'VG does not have VM attachment with UUID: ' + vms_name_to_uuid[item] }}"
+  failed_when:
+    - detach_vm_output.msg is defined
+    - detach_vm_output.msg == "Task Failed"
+    - detach_vm_output.response.legacy_error_message != failed_msg_check
+...

@@ -1,0 +1,21 @@
+---
+- name: Fetch all containers info with filter
+  nutanix.ncp.ntnx_storage_containers_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}' and clusterExtId eq '{{ cluster_name_to_uuid[cluster_name] }}'"
+  loop: "{{ ntnx_storage_containers_list }}"
+  register: ntnx_containers_info_list
+
+- name: Map containers uuid to name
+  ansible.builtin.set_fact:
+    container_name_to_uuid: "{{ container_name_to_uuid | default({}) | combine({container_name: container_uuid}) }}"
+  loop: "{{ ntnx_containers_info_list.results }}"
+  vars:
+    container_uuid: "{{ container_iter['response'][0]['container_ext_id'] }}"
+    container_name: "{{ container_iter['item'] }}"
+  loop_control:
+    loop_var: container_iter
+    label: "{{ container_iter['item'] }}"
+  when: container_iter.response | length != 0
+...

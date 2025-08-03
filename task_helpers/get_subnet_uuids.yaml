@@ -1,0 +1,20 @@
+---
+- name: Fetch all subnets info with filter
+  nutanix.ncp.ntnx_subnets_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_subnets_list }}"
+  register: ntnx_subnets_info_list
+
+- name: Map subnets uuid to name
+  ansible.builtin.set_fact:
+    subnets_name_to_uuid: "{{ subnets_name_to_uuid | default({}) | combine({subnet_name: subnet_uuid}) }}"
+  loop: "{{ ntnx_subnets_info_list.results }}"
+  vars:
+    subnet_uuid: "{{ subnet_iter['response'][0]['ext_id'] }}"
+    subnet_name: "{{ subnet_iter['item'] }}"
+  loop_control:
+    loop_var: subnet_iter
+    label: "{{ subnet_iter['item'] }}"
+...

@@ -1,0 +1,12 @@
+subnets:
+  KSALAB-NX:
+    VLAN-105:
+      subnet_type: VLAN
+      network_id: "110"
+    VLAN-106:
+      subnet_type: VLAN
+      network_id: "107"
+    VLAN-107:
+      subnet_type: VLAN
+      network_id: "108"
+...

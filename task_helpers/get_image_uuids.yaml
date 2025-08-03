@@ -1,0 +1,20 @@
+---
+- name: Fetch all Images info with filter
+  nutanix.ncp.ntnx_images_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_images_list }}"
+  register: ntnx_images_info_list
+
+- name: Map Images uuid to name
+  ansible.builtin.set_fact:
+    images_name_to_uuid: "{{ images_name_to_uuid | default({}) | combine({image_name: image_uuid}) }}"
+  loop: "{{ ntnx_images_info_list.results }}"
+  vars:
+    image_uuid: "{{ image_iter['response'][0]['ext_id'] }}"
+    image_name: "{{ image_iter['item'] }}"
+  loop_control:
+    loop_var: image_iter
+    label: "{{ image_iter['item'] }}"
+  when: image_iter.response | length != 0 

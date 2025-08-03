@@ -1,0 +1,17 @@
+---
+# Default values for ntnx_protection_policies role
+
+# Default snapshot type
+snapshot_type: "CRASH_CONSISTENT"
+
+# Default RPO unit
+rpo_unit: "MINUTE"
+
+# Default retention policy settings
+local_retention_policy:
+  num_snapshots: 30
+
+remote_snapshot_retention_policy:
+  rollup_retention_policy:
+    multiple: 2
+    snapshot_interval_type: "DAILY" 

@@ -1,0 +1,14 @@
+---
+# tasks file for ntnx_volume_groups
+- name: Import create_update_vg tasks
+  include_tasks: create_update_vg.yaml
+
+- name: Import create_update_vg_disks tasks
+  include_tasks: create_update_vg_disks.yaml
+
+- name: Import attach_vms tasks
+  include_tasks: attach_vms.yaml
+
+- name: Import detach_vms tasks
+  include_tasks: detach_vms.yaml
+...

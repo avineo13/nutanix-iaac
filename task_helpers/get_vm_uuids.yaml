@@ -1,0 +1,21 @@
+---
+- name: Fetch all VMs info with filter
+  nutanix.ncp.ntnx_vms_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_vms_list }}"
+  register: ntnx_vms_info_list
+
+- name: Map VMs uuid to name
+  ansible.builtin.set_fact:
+    vms_name_to_uuid: "{{ vms_name_to_uuid | default({}) | combine({vm_name: vm_uuid}) }}"
+  loop: "{{ ntnx_vms_info_list.results }}"
+  vars:
+    vm_uuid: "{{ vm_iter['response'][0]['ext_id'] }}"
+    vm_name: "{{ vm_iter['item'] }}"
+  loop_control:
+    loop_var: vm_iter
+    label: "{{ vm_iter['item'] }}"
+  when: vm_iter.response | length != 0
+...

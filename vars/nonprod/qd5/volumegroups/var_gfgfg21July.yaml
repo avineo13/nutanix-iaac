@@ -1,0 +1,22 @@
+---
+name: gfgfg21July
+attach_vms:
+  - s1c30inn1
+  - s1c30inn2
+detach_vms:
+  - vm-0-250721-162955
+  - s1c30inn3
+cluster_name: KSALAB-NX
+sharing_status: NOT_SHARED #accepted values are "SHARED" or "NOT_SHARED"
+enable_flash_mode: false
+vg_disks:
+  - description: "Disk 0"
+    disk_size_in_gb: 2
+  - description: "Disk 1"
+    disk_size_in_gb: 30
+  - description: "Disk 2"
+    disk_size_in_gb: 50
+  - description: "Disk 3"
+    disk_size_in_gb: 150
+storage_container: SelfServiceContainer
+...

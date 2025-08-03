@@ -1,0 +1,40 @@
+---
+- name: Check if subnet exists
+  nutanix.ncp.ntnx_subnets_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ subnet_name }}'"
+  register: verify_subnet_presence
+
+- name: Fail if more than one already exists
+  ansible.builtin.fail:
+    msg: "More than one subnet with the same name exists. Please ensure that the subnet has been deleted."
+  when: verify_subnet_presence.response | length > 1
+
+- debug:
+    msg: "{{ verify_subnet_presence }}"
+
+# - name: Print output saying Subnet already exists
+#   ansible.builtin.debug:
+#     msg: "Subnet with name {{ subnet_name }} already exists. Delete it if any further action needs to be performed."
+#   when: verify_subnet_presence.response | length == 1
+
+# TODO: Currently with NTNX Engineering for confirmation on updation feature
+- name: Update subnet with all config when it already exists
+  nutanix.ncp.ntnx_subnets_v2:
+    state: "present"
+    ext_id: "{{ verify_subnet_presence['response'][0]['ext_id'] }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    subnet_type: "{{ subnet_type }}"
+    network_id: "{{ network_id }}"
+  when: verify_subnet_presence.response | length == 1
+
+- name: Create subnet with all config if it does not exists
+  nutanix.ncp.ntnx_subnets_v2:
+    state: "present"
+    name: "{{ subnet_name }}"
+    cluster_reference: "{{ cluster_name_to_uuid[cluster_name] }}"
+    subnet_type: "{{ subnet_type }}"
+    network_id: "{{ network_id }}"
+  when: verify_subnet_presence.response | length == 0
+...

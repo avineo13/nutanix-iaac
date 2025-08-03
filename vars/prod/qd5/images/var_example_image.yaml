@@ -1,0 +1,9 @@
+---
+# Image Configuration
+image_name: "example_image"
+description: "Example image for production"
+cluster_name: "{{ cluster_name }}"
+storage_container: "{{ storage_container }}"
+image_type: "DISK_IMAGE"
+source_uri: ""
+architecture: "X86_64" 

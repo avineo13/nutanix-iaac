@@ -1,0 +1,20 @@
+---
+- name: Fetch all Availability Zones info with filter
+  nutanix.ncp.ntnx_availability_zones_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ item }}'"
+  loop: "{{ ntnx_availability_zones_list }}"
+  register: ntnx_availability_zones_info_list
+
+- name: Map Availability Zones uuid to name
+  ansible.builtin.set_fact:
+    availability_zones_name_to_uuid: "{{ availability_zones_name_to_uuid | default({}) | combine({az_name: az_uuid}) }}"
+  loop: "{{ ntnx_availability_zones_info_list.results }}"
+  vars:
+    az_uuid: "{{ az_iter['response'][0]['ext_id'] }}"
+    az_name: "{{ az_iter['item'] }}"
+  loop_control:
+    loop_var: az_iter
+    label: "{{ az_iter['item'] }}"
+  when: az_iter.response | length != 0 

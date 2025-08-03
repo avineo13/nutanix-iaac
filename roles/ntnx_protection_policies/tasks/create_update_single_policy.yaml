@@ -1,0 +1,27 @@
+---
+- name: Check if Protection Policy exists
+  nutanix.ncp.ntnx_protection_policies_info_v2:
+    validate_certs: false
+    select: "extId"
+    filter: "name eq '{{ policy_name }}'"
+  register: verify_policy_presence
+
+- name: Fail if more than one already exists
+  ansible.builtin.fail:
+    msg: "More than one Protection Policy with the same name exists. Please ensure that the protection policy has been deleted."
+  when: verify_policy_presence.response | length > 1
+
+- name: Update Protection Policy with all config when it already exists
+  nutanix.ncp.ntnx_protection_policies_v2:
+    state: "present"
+    name: "{{ policy_name }}"
+    ext_id: "{{ verify_policy_presence.response[0]['ext_id'] }}"
+    schedules: "{{ policy_config.schedules | default([]) }}"
+  when: verify_policy_presence.response | length == 1
+
+- name: Create Protection Policy with all config if it does not exists
+  nutanix.ncp.ntnx_protection_policies_v2:
+    state: "present"
+    name: "{{ policy_name }}"
+    schedules: "{{ policy_config.schedules | default([]) }}"
+  when: verify_policy_presence.response | length == 0 
